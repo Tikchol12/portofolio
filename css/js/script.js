@@ -1,33 +1,74 @@
 // Mobile Navigation Toggle
 const hamburger = document.querySelector(".hamburger");
 const navMenu = document.querySelector(".nav-menu");
+const body = document.querySelector("body");
 
-if (hamburger) {
-  hamburger.addEventListener("click", () => {
-    hamburger.classList.toggle("active");
-    navMenu.classList.toggle("active");
-  });
+// Function to toggle mobile menu
+function toggleMobileMenu() {
+  hamburger.classList.toggle("active");
+  navMenu.classList.toggle("active");
+  body.style.overflow = navMenu.classList.contains("active") ? "hidden" : "";
 }
 
-// Close mobile menu when clicking on a link
-document.querySelectorAll(".nav-link").forEach((n) =>
-  n.addEventListener("click", () => {
-    hamburger.classList.remove("active");
-    navMenu.classList.remove("active");
-  })
-);
+// Hamburger click event
+hamburger.addEventListener("click", toggleMobileMenu);
 
-// Smooth scrolling for navigation links
+// Close mobile menu when clicking on a link
+document.querySelectorAll(".nav-link").forEach((link) => {
+  link.addEventListener("click", (e) => {
+    // Remove active class from all links
+    document.querySelectorAll(".nav-link").forEach((navLink) => {
+      navLink.classList.remove("active");
+    });
+
+    // Add active class to clicked link
+    link.classList.add("active");
+
+    // Close mobile menu if open
+    if (navMenu.classList.contains("active")) {
+      toggleMobileMenu();
+    }
+
+    // Smooth scroll to section
+    const targetId = link.getAttribute("href");
+    if (targetId.startsWith("#")) {
+      e.preventDefault();
+      const targetSection = document.querySelector(targetId);
+      if (targetSection) {
+        const offsetTop = targetSection.offsetTop - 80;
+        window.scrollTo({
+          top: offsetTop,
+          behavior: "smooth",
+        });
+      }
+    }
+  });
+});
+
+// Close menu when clicking outside
+document.addEventListener("click", (e) => {
+  if (
+    !e.target.closest(".nav-container") &&
+    navMenu.classList.contains("active")
+  ) {
+    toggleMobileMenu();
+  }
+});
+
+// Close menu on escape key
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && navMenu.classList.contains("active")) {
+    toggleMobileMenu();
+  }
+});
+
+// Smooth scrolling for all anchor links
 document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
   anchor.addEventListener("click", function (e) {
-    e.preventDefault();
-    const targetId = this.getAttribute("href");
-    if (targetId === "#") return;
-
-    const targetElement = document.querySelector(targetId);
-    if (targetElement) {
-      const offsetTop = targetElement.offsetTop - 80;
-
+    const target = document.querySelector(this.getAttribute("href"));
+    if (target && this.getAttribute("href") !== "#") {
+      e.preventDefault();
+      const offsetTop = target.offsetTop - 80;
       window.scrollTo({
         top: offsetTop,
         behavior: "smooth",
@@ -36,106 +77,74 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
   });
 });
 
-// Navbar background on scroll
-window.addEventListener("scroll", () => {
-  const navbar = document.querySelector(".navbar");
-  const backToTop = document.querySelector(".back-to-top");
-
-  if (window.scrollY > 100) {
-    navbar.style.background = "rgba(255, 255, 255, 0.98)";
-    navbar.style.boxShadow = "0 2px 20px rgba(0, 0, 0, 0.1)";
-  } else {
-    navbar.style.background = "rgba(255, 255, 255, 0.95)";
-    navbar.style.boxShadow = "0 2px 10px rgba(0, 0, 0, 0.1)";
-  }
-
-  // Back to top button
-  if (window.scrollY > 500) {
-    backToTop.classList.add("visible");
-  } else {
-    backToTop.classList.remove("visible");
-  }
-
-  // Active navigation link
+// Active navigation link based on scroll position
+function updateActiveNavLink() {
   const sections = document.querySelectorAll("section[id]");
+  const navLinks = document.querySelectorAll(".nav-link");
+
   let current = "";
+  const scrollPos = window.scrollY + 100;
 
   sections.forEach((section) => {
-    const sectionTop = section.offsetTop - 100;
+    const sectionTop = section.offsetTop;
     const sectionHeight = section.clientHeight;
 
-    if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
+    if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
       current = section.getAttribute("id");
     }
   });
 
-  document.querySelectorAll(".nav-link").forEach((link) => {
+  navLinks.forEach((link) => {
     link.classList.remove("active");
-    if (link.getAttribute("href") === `#${current}`) {
+    const href = link.getAttribute("href");
+    if (href === `#${current}`) {
       link.classList.add("active");
     }
   });
-});
-
-// Back to top functionality
-const backToTop = document.querySelector(".back-to-top");
-if (backToTop) {
-  backToTop.addEventListener("click", () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  });
 }
 
-// Download CV button
-const downloadBtn = document.querySelector(".btn-primary");
-if (downloadBtn) {
-  downloadBtn.addEventListener("click", () => {
-    // Replace with actual CV file path
-    const cvUrl = "path/to/your-cv.pdf";
-    if (cvUrl && cvUrl !== "path/to/your-cv.pdf") {
-      const link = document.createElement("a");
-      link.href = cvUrl;
-      link.download = "A_Miftahul_Azhar_Wal_Ikram_CV.pdf";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      alert("CV download link will be added soon!");
-    }
-  });
-}
+// Update active link on scroll
+window.addEventListener("scroll", updateActiveNavLink);
 
-// Add fade-in animation on scroll
-const observerOptions = {
-  threshold: 0.1,
-  rootMargin: "0px 0px -50px 0px",
-};
-
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
-    if (entry.isIntersecting) {
-      entry.target.style.opacity = "1";
-      entry.target.style.transform = "translateY(0)";
-    }
-  });
-}, observerOptions);
-
-// Observe elements for animation
+// Initialize active link on page load
 document.addEventListener("DOMContentLoaded", () => {
+  updateActiveNavLink();
+
+  // Add loading animation to elements
+  const animateOnScroll = () => {
+    const elements = document.querySelectorAll(
+      ".skill-card, .tool-card, .project-card"
+    );
+
+    elements.forEach((element) => {
+      const elementTop = element.getBoundingClientRect().top;
+      const elementVisible = 150;
+
+      if (elementTop < window.innerHeight - elementVisible) {
+        element.style.opacity = "1";
+        element.style.transform = "translateY(0)";
+      }
+    });
+  };
+
+  // Set initial state for animation
   const animatedElements = document.querySelectorAll(
-    ".project-card, .skill-card, .tool-card"
+    ".skill-card, .tool-card, .project-card"
   );
-  animatedElements.forEach((el) => {
-    el.style.opacity = "0";
-    el.style.transform = "translateY(20px)";
-    el.style.transition = "opacity 0.6s ease, transform 0.6s ease";
-    observer.observe(el);
+  animatedElements.forEach((element) => {
+    element.style.opacity = "0";
+    element.style.transform = "translateY(20px)";
+    element.style.transition = "opacity 0.6s ease, transform 0.6s ease";
   });
+
+  // Trigger animation on scroll
+  window.addEventListener("scroll", animateOnScroll);
+  animateOnScroll(); // Run once on load
 });
 
-// Add loading animation
-window.addEventListener("load", () => {
-  document.body.classList.add("loaded");
+// Handle window resize
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 768 && navMenu.classList.contains("active")) {
+    toggleMobileMenu();
+  }
 });
